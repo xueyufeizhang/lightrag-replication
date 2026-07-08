@@ -15,7 +15,7 @@ LightRAG builds a knowledge graph **offline** from a document corpus, then answe
    - `KVStore` — key/value store for entities, relations, and chunks
    - `VectorIndex` — flat numpy cosine-similarity index (separate indexes for entities, relations, chunks)
    - `GraphStore` — a `networkx` graph, persisted via `node_link_data`
-5. **Retrieval** (`core.py`, `LightRAG.retrieve`) — **naive** mode is implemented: embed the query, take cosine top-k over the chunk vector index, and feed the retrieved chunks to the LLM as context. `local` / `global` / `hybrid` (graph-aware retrieval) are named but not yet implemented.
+5. **Retrieval** (`core.py`, `LightRAG.retrieve`) — **naive** mode is implemented: embed the query, take cosine top-k over the chunk vector index, and feed the retrieved chunks to the LLM as context. `local` and `global` (graph-aware retrieval over entities/relations) are under active development; `hybrid` will combine them once both land.
 6. **Visualization** (`visual.py`) — loads a persisted `graph.json` and renders an interactive, type-colored HTML graph with `pyvis`.
 
 ## Project layout
@@ -71,13 +71,11 @@ To explore the resulting graph visually:
 python visual.py
 ```
 
-`visual.py` currently reads/writes fixed paths under a `replicate/` prefix — adjust them to match your `WORKING_DIR` if you changed it from the default.
+## Status
 
-## Status / known limitations
+**Implemented:** chunking, concurrent LLM-based entity/relation extraction (with retry and partial-failure tolerance), dedup/merge, KV + vector + graph storage, naive (vector-only) retrieval, graph visualization.
 
-- Only naive (vector-only) retrieval is implemented; local/global/hybrid graph-aware retrieval modes from the original LightRAG design are not yet ported.
-- Retrieval context is built from raw chunks only — extracted entities/relations are not yet folded into the LLM context.
-- No automated tests.
+**In progress:** `local` and `global` graph-aware retrieval modes (`core.py`, `LightRAG.retrieve`) are actively being developed, not yet functional; `hybrid` is planned once both land.
 
 ## License
 

@@ -127,7 +127,7 @@ async def extract(chunks: list[str], llm_func: Callable, file_id: str, con_num: 
     done_count = 0
     start = time.time()
 
-    async def process_one(idx: int, chunk: str) -> tuple[list[Entity], list[Relation]]:
+    async def process_one(idx: int, chunk: str) -> tuple[list[Entity], list[Relation]] | None:
         nonlocal done_count
         async with sem:
             last_err = None
@@ -163,18 +163,28 @@ async def extract(chunks: list[str], llm_func: Callable, file_id: str, con_num: 
                           f"Retry after {wait}s {attempt+1}/5", flush=True)
                     await asyncio.sleep(wait)
 
-            raise RuntimeError(f"chunk {idx} failed after 5 times retry，last error: {last_err}")
+            print(f"[extract] chunk {idx} failed after 5 times retry, skipping it. "
+                  f"last error: {last_err}", flush=True)
+            return None
 
     results = await asyncio.gather(
-        *[process_one(idx, c) for idx, c in enumerate(chunks, start=1)]
+        *[process_one(idx, c) for idx, c in enumerate(chunks, start=1)],
+        return_exceptions=True,
     )
 
     all_entities: list[Entity] = []
     all_relations: list[Relation] = []
-    for entities, relations in results:
+    failed = 0
+    for result in results:
+        if result is None or isinstance(result, Exception):
+            failed += 1
+            continue
+        entities, relations = result
         all_entities.extend(entities)
         all_relations.extend(relations)
 
+    if failed:
+        print(f"[extract] {failed}/{chunks_num} chunk(s) failed and were skipped", flush=True)
     print(f"[extract] All done: {len(all_entities)} entities, {len(all_relations)} relations, "
           f"Total time: {time.time()-start:.0f}s", flush=True)
     return all_entities, all_relations

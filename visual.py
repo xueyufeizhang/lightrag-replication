@@ -2,7 +2,7 @@ import json
 import networkx as nx
 from pyvis.network import Network
 
-with open("./replicate/dickens/graph.json") as f:
+with open("./dickens/graph.json") as f:
     G = nx.node_link_graph(json.load(f))
 
 # # Remove the isolated nodes from visualization
